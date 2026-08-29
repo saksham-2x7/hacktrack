@@ -465,6 +465,8 @@
         <div class="field"><label for="hackPrize">Prize Pool</label><input type="text" id="hackPrize" placeholder="e.g. $50,000"></div>
         <div class="field"><label for="hackUrl">Website URL</label><input type="url" id="hackUrl" placeholder="https://..."></div>
         <div class="field"><label for="hackNotes">Notes</label><textarea id="hackNotes" placeholder="Team, ideas, submission notes..." rows="3"></textarea></div>
+        <div class="field"><label for="hackTeamSize">Team Size (Optional)</label><input type="number" id="hackTeamSize" min="1" max="10" placeholder="e.g. 4"></div>
+        <div class="field"><label for="hackTeamMembers">Select Teammates (Hold Cmd/Ctrl)</label><select id="hackTeamMembers" multiple style="height: 100px; padding: 8px; font-family: var(--font-body); background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: var(--radius-sm);"></select></div>
         <input type="hidden" id="hackEditId" value="">
         <button type="submit" class="btn-primary" id="modalSubmitBtn">Add Hackathon</button>
       </form>
