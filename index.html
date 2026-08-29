@@ -500,61 +500,46 @@
     let currentView = 'list';
     let calMonth = new Date().getMonth();
     let calYear = new Date().getFullYear();
-    let nextId = 1;
-
-    // ═══════════════════════════════════════════
-    //  USER REGISTRY (localStorage)
-    // ═══════════════════════════════════════════
-    function getUsers() {
-      return JSON.parse(localStorage.getItem('hacktrack_users') || '[]');
-    }
-    function saveUsers(users) {
-      localStorage.setItem('hacktrack_users', JSON.stringify(users));
-    }
-    function findUser(username) {
-      return getUsers().find(u => u.username.toLowerCase() === username.toLowerCase());
-    }
-
-    // ═══════════════════════════════════════════
-    //  PER-USER DATA
-    // ═══════════════════════════════════════════
-    function userKey(username) { return 'hacktrack_data_' + username.toLowerCase(); }
-
-    function loadUserData(username) {
-      const raw = localStorage.getItem(userKey(username));
-      if (raw) {
-        const d = JSON.parse(raw);
-        hackathons = d.hackathons || [];
-        nextId = d.nextId || (Math.max(0, ...hackathons.map(h => h.id)) + 1);
-      } else {
-        hackathons = [];
-        nextId = 1;
-      }
-    }
-    function saveUserData(username) {
-      localStorage.setItem(userKey(username), JSON.stringify({ hackathons, nextId }));
-    }
 
     // ═══════════════════════════════════════════
     //  INIT
     // ═══════════════════════════════════════════
-    function init() {
+    async function init() {
       const savedTheme = localStorage.getItem('hacktrack_theme');
       if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeIcons();
       updateClocks();
       setInterval(updateClocks, 1000);
-      updateSlots();
 
-      const savedUser = sessionStorage.getItem('hacktrack_session');
-      if (savedUser) {
-        const user = findUser(savedUser);
-        if (user) { currentUser = user; loadUserData(user.username); showDashboard(); }
+      // Check server session
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          currentUser = data.user;
+          await loadUserData();
+          showDashboard();
+        } else {
+          updateSlots();
+        }
+      } catch (e) {
+        updateSlots();
+      }
+    }
+
+    async function loadUserData() {
+      try {
+        const res = await fetch('/api/hackathons');
+        if (res.ok) {
+          hackathons = await res.json();
+        }
+      } catch (e) {
+        console.error('Failed to load hackathons');
       }
     }
 
     // ═══════════════════════════════════════════
-    //  THEME
+    //  THEME & CLOCK
     // ═══════════════════════════════════════════
     function toggleTheme() {
       const html = document.documentElement;
@@ -568,10 +553,6 @@
       document.querySelectorAll('.icon-sun').forEach(el => el.style.display = isDark ? 'none' : 'block');
       document.querySelectorAll('.icon-moon').forEach(el => el.style.display = isDark ? 'block' : 'none');
     }
-
-    // ═══════════════════════════════════════════
-    //  CLOCK
-    // ═══════════════════════════════════════════
     function updateClocks() {
       const now = new Date();
       const t = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -603,15 +584,14 @@
       document.getElementById('signupSuccess').classList.remove('visible');
     }
     function updateSlots() {
-      const count = getUsers().length;
       const el = document.getElementById('slotsLeft');
-      if (el) el.textContent = `[ ${count} / ${MAX_USERS} slots used ]`;
+      if (el) el.textContent = `[ Secure Mode Active ]`;
     }
 
     // ═══════════════════════════════════════════
     //  SIGNUP
     // ═══════════════════════════════════════════
-    function handleSignup(e) {
+    async function handleSignup(e) {
       e.preventDefault();
       clearAuthMessages();
 
@@ -620,34 +600,30 @@
       const password = document.getElementById('signupPass').value;
       const confirm = document.getElementById('signupConfirm').value;
 
-      // Validate username: alphanumeric + underscore only
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        return showSignupError('Username can only contain letters, numbers, and underscores.');
-      }
-      if (password !== confirm) {
-        return showSignupError('Passwords do not match.');
-      }
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) return showSignupError('Username can only contain letters, numbers, and underscores.');
+      if (password !== confirm) return showSignupError('Passwords do not match.');
 
-      const users = getUsers();
-      if (users.length >= MAX_USERS) {
-        return showSignupError('Maximum user limit (30) reached. No more sign-ups available.');
-      }
-      if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-        return showSignupError('Username already taken. Choose a different one.');
-      }
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, displayName, password })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) {
+          return showSignupError(data.error || 'Registration failed');
+        }
 
-      // Create user
-      users.push({ username: username.toLowerCase(), displayName, password });
-      saveUsers(users);
-      updateSlots();
-
-      // Show success
-      document.getElementById('signupSuccess').classList.add('visible');
-      setTimeout(() => {
-        showLogin();
-        document.getElementById('loginUser').value = username;
-        document.getElementById('loginPass').focus();
-      }, 1500);
+        document.getElementById('signupSuccess').classList.add('visible');
+        setTimeout(() => {
+          showLogin();
+          document.getElementById('loginUser').value = username;
+          document.getElementById('loginPass').focus();
+        }, 1500);
+      } catch (e) {
+        showSignupError('Network error');
+      }
     }
 
     function showSignupError(msg) {
@@ -658,31 +634,41 @@
     // ═══════════════════════════════════════════
     //  LOGIN
     // ═══════════════════════════════════════════
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       clearAuthMessages();
 
       const username = document.getElementById('loginUser').value.trim();
       const password = document.getElementById('loginPass').value;
 
-      const user = findUser(username);
-      if (!user || user.password !== password) {
-        document.getElementById('loginErrorText').textContent = 'Invalid username or password.';
-        document.getElementById('loginError').classList.add('visible');
-        setTimeout(() => document.getElementById('loginError').classList.remove('visible'), 3000);
-        return;
-      }
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
 
-      currentUser = user;
-      sessionStorage.setItem('hacktrack_session', user.username);
-      loadUserData(user.username);
-      showDashboard();
+        if (!res.ok) {
+          document.getElementById('loginErrorText').textContent = data.error || 'Invalid credentials';
+          document.getElementById('loginError').classList.add('visible');
+          setTimeout(() => document.getElementById('loginError').classList.remove('visible'), 3000);
+          return;
+        }
+
+        currentUser = data.user;
+        await loadUserData();
+        showDashboard();
+      } catch(e) {
+        document.getElementById('loginErrorText').textContent = 'Network error';
+        document.getElementById('loginError').classList.add('visible');
+      }
     }
 
-    function handleLogout() {
+    async function handleLogout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
       currentUser = null;
       hackathons = [];
-      sessionStorage.removeItem('hacktrack_session');
       document.getElementById('authPage').classList.remove('hidden');
       document.getElementById('dashboard').classList.remove('active');
       document.getElementById('loginUser').value = '';
@@ -695,6 +681,7 @@
       document.getElementById('dashboard').classList.add('active');
       document.getElementById('headerUser').textContent = currentUser.displayName;
       renderHackathons();
+      renderCalendar();
       updateStats();
     }
 
@@ -730,7 +717,7 @@
     }
 
     // ═══════════════════════════════════════════
-    //  RENDER
+    //  RENDER LIST
     // ═══════════════════════════════════════════
     function renderHackathons() {
       const list = document.getElementById('hackathonList');
@@ -762,6 +749,7 @@
 
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function fmtRange(s, e) {
+      if(!s || !e) return '—';
       const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00');
       return `${sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${ed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     }
@@ -790,13 +778,10 @@
       const daysInPrev = new Date(calYear, calMonth, 0).getDate();
       
       let html = '';
-      
-      // Prev month
       for (let i = firstDay - 1; i >= 0; i--) {
         html += `<div class="calendar-cell other-month"><div class="calendar-date">${daysInPrev - i}</div></div>`;
       }
       
-      // Curr month
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = calYear === tNow.getFullYear() && calMonth === tNow.getMonth() && d === tNow.getDate();
@@ -818,13 +803,11 @@
         </div>`;
       }
       
-      // Next month
       const totalCells = firstDay + daysInMonth;
       const nextDays = (7 - (totalCells % 7)) % 7;
       for (let i = 1; i <= nextDays; i++) {
         html += `<div class="calendar-cell other-month"><div class="calendar-date">${i}</div></div>`;
       }
-      
       document.getElementById('calendarDays').innerHTML = html;
     }
 
@@ -854,8 +837,8 @@
         document.getElementById('hackEditId').value = editId;
         document.getElementById('hackName').value = h.name;
         document.getElementById('hackOrganizer').value = h.organizer || '';
-        document.getElementById('hackStartDate').value = h.startDate;
-        document.getElementById('hackEndDate').value = h.endDate;
+        document.getElementById('hackStartDate').value = h.startDate || '';
+        document.getElementById('hackEndDate').value = h.endDate || '';
         document.getElementById('hackCategory').value = h.category;
         document.getElementById('hackStatus').value = h.status;
         document.getElementById('hackPrize').value = h.prize || '';
@@ -872,7 +855,7 @@
     }
     function closeAddModal() { document.getElementById('addModal').classList.remove('open'); document.body.style.overflow = ''; }
 
-    function handleSaveHackathon(e) {
+    async function handleSaveHackathon(e) {
       e.preventDefault();
       const editId = document.getElementById('hackEditId').value;
       const data = {
@@ -886,17 +869,29 @@
         url: document.getElementById('hackUrl').value,
         notes: document.getElementById('hackNotes').value,
       };
-      if (editId) {
-        const idx = hackathons.findIndex(h => h.id === parseInt(editId));
-        if (idx >= 0) hackathons[idx] = { ...hackathons[idx], ...data };
-      } else {
-        hackathons.push({ id: nextId++, ...data });
+
+      try {
+        if (editId) {
+          await fetch(`/api/hackathon?id=${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        } else {
+          await fetch('/api/hackathons', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        }
+        await loadUserData();
+        renderHackathons();
+        renderCalendar();
+        updateStats();
+        closeAddModal();
+      } catch (err) {
+        console.error('Failed to save');
       }
-      saveUserData(currentUser.username);
-      renderHackathons();
-      renderCalendar();
-      updateStats();
-      closeAddModal();
     }
 
     // ═══════════════════════════════════════════
@@ -918,10 +913,10 @@
         ${h.notes ? `<div class="detail-field"><div class="detail-label">Notes</div><div class="detail-value">${esc(h.notes)}</div></div>` : ''}
       `;
       document.getElementById('detailEditBtn').onclick = () => { closeDetailModal(); setTimeout(() => openAddModal(h.id), 200); };
-      document.getElementById('detailDeleteBtn').onclick = () => {
+      document.getElementById('detailDeleteBtn').onclick = async () => {
         if (confirm('Delete this hackathon?')) {
-          hackathons = hackathons.filter(x => x.id !== h.id);
-          saveUserData(currentUser.username);
+          await fetch(`/api/hackathon?id=${h.id}`, { method: 'DELETE' });
+          await loadUserData();
           renderHackathons(); renderCalendar(); updateStats(); closeDetailModal();
         }
       };
@@ -929,6 +924,7 @@
     function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); document.body.style.overflow = ''; }
 
     function countdown(s, e) {
+      if(!s || !e) return '—';
       const now = new Date(), start = new Date(s + 'T00:00:00'), end = new Date(e + 'T23:59:59');
       if (now > end) return 'Event ended';
       if (now >= start) { const d = Math.ceil((end - now) / 864e5); return `In progress — ${d} day${d !== 1 ? 's' : ''} left`; }

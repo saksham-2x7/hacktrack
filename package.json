@@ -1,0 +1,26 @@
+{
+  "name": "hackathon-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saksham-2x7/hacktrack.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/saksham-2x7/hacktrack/issues"
+  },
+  "homepage": "https://github.com/saksham-2x7/hacktrack#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie": "^2.0.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0"
+  }
+}
