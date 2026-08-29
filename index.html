@@ -396,7 +396,18 @@
       </div>
 
       <div id="listView" class="list-section active">
-        <div class="axis-section"><ol class="hackathon-list" id="hackathonList"></ol></div>
+        <div class="status-section">
+          <h3 class="status-header" style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; color: var(--text-secondary);">Active & Ongoing</h3>
+          <ul class="hackathon-list axis-section" id="listActive"></ul>
+        </div>
+        <div class="status-section" style="margin-top: 48px;">
+          <h3 class="status-header" style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; color: var(--text-secondary);">Upcoming & Registered</h3>
+          <ul class="hackathon-list axis-section" id="listUpcoming"></ul>
+        </div>
+        <div class="status-section" style="margin-top: 48px;">
+          <h3 class="status-header" style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; color: var(--text-secondary);">Ended</h3>
+          <ul class="hackathon-list axis-section" id="listEnded"></ul>
+        </div>
       </div>
 
       <div id="calendarView" class="calendar-section">
