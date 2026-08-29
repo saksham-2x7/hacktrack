@@ -217,6 +217,53 @@
     .empty-state-title{font-size:16px;font-weight:600;margin-bottom:6px}
     .empty-state-text{font-size:13px;color:var(--text-secondary)}
 
+    /* VIEW TOGGLE */
+    .view-toggle{display:flex;align-items:center;gap:4px;border:1px solid var(--border-primary);border-radius:var(--radius-sm);padding:3px;background:var(--bg-secondary)}
+    .view-toggle-btn{padding:6px 14px;border:none;border-radius:3px;background:transparent;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;cursor:pointer;transition:all var(--transition-fast);letter-spacing:0.02em}
+    .view-toggle-btn.active{background:var(--bg-card);color:var(--text-primary);box-shadow:var(--shadow-sm)}
+    .view-toggle-btn:hover:not(.active){color:var(--text-primary)}
+
+    /* CALENDAR */
+    .calendar-section{display:none}
+    .calendar-section.active{display:block}
+    .list-section{display:none}
+    .list-section.active{display:block}
+
+    .calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .calendar-nav-title{font-size:18px;font-weight:600;letter-spacing:-0.01em}
+    .calendar-nav-title span{color:var(--text-accent);font-family:var(--font-mono);font-weight:500}
+    .calendar-nav-actions{display:flex;align-items:center;gap:6px}
+    .calendar-nav-btn{width:34px;height:34px;border:1px solid var(--border-primary);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all var(--transition-fast)}
+    .calendar-nav-btn:hover{background:var(--bg-secondary);color:var(--text-primary)}
+    .calendar-today-btn{padding:6px 12px;border:1px solid var(--border-primary);border-radius:var(--radius-sm);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font-mono);font-size:11px;transition:all var(--transition-fast);letter-spacing:0.02em}
+    .calendar-today-btn:hover{background:var(--bg-secondary);color:var(--text-primary)}
+
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--border-secondary);border-radius:var(--radius-md);overflow:hidden}
+    .calendar-day-header{padding:10px 4px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;background:var(--bg-secondary);border-bottom:1px solid var(--border-secondary)}
+    .calendar-cell{min-height:90px;padding:6px;border-right:1px solid var(--border-secondary);border-bottom:1px solid var(--border-secondary);background:var(--bg-card);transition:background var(--transition-fast);cursor:default;position:relative}
+    .calendar-cell:nth-child(7n){border-right:none}
+    .calendar-cell:hover{background:var(--bg-card-hover)}
+    .calendar-cell.other-month{background:var(--bg-primary);opacity:0.4}
+    .calendar-cell.today{background:rgba(29,57,245,0.04)}
+    [data-theme="dark"] .calendar-cell.today{background:rgba(107,138,255,0.06)}
+    .calendar-date{font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+    .calendar-cell.today .calendar-date{color:var(--text-accent);font-weight:600}
+    .calendar-today-dot{width:5px;height:5px;border-radius:50%;background:var(--text-accent)}
+
+    .calendar-events{display:flex;flex-direction:column;gap:2px}
+    .calendar-event{padding:2px 5px;border-radius:3px;font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:opacity var(--transition-fast);line-height:1.4}
+    .calendar-event:hover{opacity:0.8}
+    .calendar-event.upcoming{background:rgba(29,57,245,0.12);color:var(--status-upcoming)}
+    .calendar-event.active{background:rgba(22,163,74,0.12);color:var(--status-active)}
+    .calendar-event.ended{background:rgba(156,163,175,0.12);color:var(--status-ended)}
+    .calendar-event.registered{background:rgba(245,158,11,0.12);color:var(--status-registered)}
+    [data-theme="dark"] .calendar-event.upcoming{background:rgba(107,138,255,0.15)}
+    [data-theme="dark"] .calendar-event.active{background:rgba(74,222,128,0.15)}
+    [data-theme="dark"] .calendar-event.ended{background:rgba(82,82,82,0.25)}
+    [data-theme="dark"] .calendar-event.registered{background:rgba(251,191,36,0.15)}
+    .calendar-more{font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);padding:1px 4px;cursor:pointer}
+    .calendar-more:hover{color:var(--text-accent)}
+
     .fade-in{animation:fadeIn .4s ease forwards}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     .stagger-1{animation-delay:.04s}.stagger-2{animation-delay:.08s}.stagger-3{animation-delay:.12s}.stagger-4{animation-delay:.16s}.stagger-5{animation-delay:.2s}
@@ -227,6 +274,9 @@
       .hackathon-chip{display:none}.stats-row{grid-template-columns:repeat(2,1fr)}
       .hero-bottom{flex-direction:column;align-items:flex-start}
       .detail-actions{flex-direction:column}.header-user{display:none}
+      .calendar-cell{min-height:60px;padding:4px}
+      .calendar-event{font-size:9px;padding:1px 3px}
+      .calendar-date{font-size:10px}
     }
   </style>
 </head>
@@ -285,7 +335,7 @@
       </div>
 
       <div class="auth-footer">
-        <span class="auth-footer-text"><span class="auth-marker"></span>HackTrack v2.0</span>
+        <span class="auth-footer-text"><span class="auth-marker"></span>HackTrack v3.0</span>
         <time class="auth-footer-time" id="authTime"></time>
       </div>
     </div>
@@ -337,14 +387,46 @@
         <h2 class="section-title"><span class="section-title-line">Your tracked</span><span class="section-title-line">hackathons.</span></h2>
         <p class="section-description">Every event you're watching, registered for, or have completed.</p>
       </div>
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="filterHackathons('all')" data-filter="all">All</button>
-        <button class="filter-btn" onclick="filterHackathons('upcoming')" data-filter="upcoming">Upcoming</button>
-        <button class="filter-btn" onclick="filterHackathons('active')" data-filter="active">Active</button>
-        <button class="filter-btn" onclick="filterHackathons('registered')" data-filter="registered">Registered</button>
-        <button class="filter-btn" onclick="filterHackathons('ended')" data-filter="ended">Ended</button>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:28px;">
+        <div class="filter-bar" style="margin-bottom:0;">
+          <button class="filter-btn active" onclick="filterHackathons('all')" data-filter="all">All</button>
+          <button class="filter-btn" onclick="filterHackathons('upcoming')" data-filter="upcoming">Upcoming</button>
+          <button class="filter-btn" onclick="filterHackathons('active')" data-filter="active">Active</button>
+          <button class="filter-btn" onclick="filterHackathons('registered')" data-filter="registered">Registered</button>
+          <button class="filter-btn" onclick="filterHackathons('ended')" data-filter="ended">Ended</button>
+        </div>
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" id="btnViewList" onclick="toggleView('list')">List</button>
+          <button class="view-toggle-btn" id="btnViewCalendar" onclick="toggleView('calendar')">Calendar</button>
+        </div>
       </div>
-      <div class="axis-section"><ol class="hackathon-list" id="hackathonList"></ol></div>
+
+      <div id="listView" class="list-section active">
+        <div class="axis-section"><ol class="hackathon-list" id="hackathonList"></ol></div>
+      </div>
+
+      <div id="calendarView" class="calendar-section">
+        <div class="calendar-nav">
+          <div class="calendar-nav-title" id="calendarMonthYear"></div>
+          <div class="calendar-nav-actions">
+            <button class="calendar-today-btn" onclick="goToToday()">Today</button>
+            <button class="calendar-nav-btn" onclick="changeMonth(-1)">←</button>
+            <button class="calendar-nav-btn" onclick="changeMonth(1)">→</button>
+          </div>
+        </div>
+        <div class="calendar-grid">
+          <div class="calendar-day-header">Sun</div>
+          <div class="calendar-day-header">Mon</div>
+          <div class="calendar-day-header">Tue</div>
+          <div class="calendar-day-header">Wed</div>
+          <div class="calendar-day-header">Thu</div>
+          <div class="calendar-day-header">Fri</div>
+          <div class="calendar-day-header">Sat</div>
+        </div>
+        <div class="calendar-grid" style="border-top:none; border-top-left-radius:0; border-top-right-radius:0;" id="calendarDays">
+          <!-- Calendar days injected by JS -->
+        </div>
+      </div>
     </section>
 
     <footer class="site-footer site-container">
@@ -407,7 +489,7 @@
     // ═══════════════════════════════════════════
     //  CONFIG
     // ═══════════════════════════════════════════
-    const MAX_USERS = 30;
+    const MAX_USERS = 99;
 
     // ═══════════════════════════════════════════
     //  STATE
@@ -415,6 +497,9 @@
     let currentUser = null; // { username, displayName }
     let hackathons = [];
     let currentFilter = 'all';
+    let currentView = 'list';
+    let calMonth = new Date().getMonth();
+    let calYear = new Date().getFullYear();
     let nextId = 1;
 
     // ═══════════════════════════════════════════
@@ -613,6 +698,15 @@
       updateStats();
     }
 
+    function toggleView(view) {
+      currentView = view;
+      document.getElementById('btnViewList').classList.toggle('active', view === 'list');
+      document.getElementById('btnViewCalendar').classList.toggle('active', view === 'calendar');
+      document.getElementById('listView').classList.toggle('active', view === 'list');
+      document.getElementById('calendarView').classList.toggle('active', view === 'calendar');
+      if (view === 'calendar') renderCalendar();
+    }
+
     // ═══════════════════════════════════════════
     //  STATS
     // ═══════════════════════════════════════════
@@ -673,12 +767,75 @@
     }
 
     // ═══════════════════════════════════════════
+    //  CALENDAR
+    // ═══════════════════════════════════════════
+    function changeMonth(delta) {
+      calMonth += delta;
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      else if (calMonth > 11) { calMonth = 0; calYear++; }
+      renderCalendar();
+    }
+    function goToToday() {
+      calMonth = new Date().getMonth();
+      calYear = new Date().getFullYear();
+      renderCalendar();
+    }
+    function renderCalendar() {
+      if (currentView !== 'calendar') return;
+      const tNow = new Date();
+      document.getElementById('calendarMonthYear').innerHTML = `<span>[</span> ${new Date(calYear, calMonth).toLocaleString('en-US', { month: 'long', year: 'numeric' })} <span>]</span>`;
+      
+      const firstDay = new Date(calYear, calMonth, 1).getDay();
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+      
+      let html = '';
+      
+      // Prev month
+      for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="calendar-cell other-month"><div class="calendar-date">${daysInPrev - i}</div></div>`;
+      }
+      
+      // Curr month
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = calYear === tNow.getFullYear() && calMonth === tNow.getMonth() && d === tNow.getDate();
+        
+        let dayEvents = hackathons.filter(h => h.startDate <= dateStr && h.endDate >= dateStr);
+        if (currentFilter !== 'all') dayEvents = dayEvents.filter(h => h.status === currentFilter);
+        
+        let eventsHtml = '';
+        if (dayEvents.length) {
+          eventsHtml = `<div class="calendar-events">` + 
+            dayEvents.slice(0, 3).map(h => `<div class="calendar-event ${h.status}" onclick="openDetailModal(${h.id})">${esc(h.name)}</div>`).join('') +
+            (dayEvents.length > 3 ? `<div class="calendar-more">+${dayEvents.length - 3} more</div>` : '') +
+            `</div>`;
+        }
+        
+        html += `<div class="calendar-cell ${isToday ? 'today' : ''}">
+          <div class="calendar-date"><span>${d}</span>${isToday ? '<span class="calendar-today-dot"></span>' : ''}</div>
+          ${eventsHtml}
+        </div>`;
+      }
+      
+      // Next month
+      const totalCells = firstDay + daysInMonth;
+      const nextDays = (7 - (totalCells % 7)) % 7;
+      for (let i = 1; i <= nextDays; i++) {
+        html += `<div class="calendar-cell other-month"><div class="calendar-date">${i}</div></div>`;
+      }
+      
+      document.getElementById('calendarDays').innerHTML = html;
+    }
+
+    // ═══════════════════════════════════════════
     //  FILTERS
     // ═══════════════════════════════════════════
     function filterHackathons(status) {
       currentFilter = status;
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === status));
       renderHackathons();
+      renderCalendar();
     }
 
     // ═══════════════════════════════════════════
@@ -737,6 +894,7 @@
       }
       saveUserData(currentUser.username);
       renderHackathons();
+      renderCalendar();
       updateStats();
       closeAddModal();
     }
@@ -764,7 +922,7 @@
         if (confirm('Delete this hackathon?')) {
           hackathons = hackathons.filter(x => x.id !== h.id);
           saveUserData(currentUser.username);
-          renderHackathons(); updateStats(); closeDetailModal();
+          renderHackathons(); renderCalendar(); updateStats(); closeDetailModal();
         }
       };
     }
