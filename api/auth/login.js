@@ -1,7 +1,6 @@
 const { getPool } = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { serialize } = require('cookie');
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -31,13 +30,9 @@ export default async function handler(req, res) {
     );
 
     // Set HttpOnly cookie
-    res.setHeader('Set-Cookie', serialize('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/'
-    }));
+    const isProd = process.env.NODE_ENV === 'production';
+    const maxAge = 60 * 60 * 24 * 7;
+    res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; ${isProd ? 'Secure;' : ''} SameSite=Strict; Max-Age=${maxAge}; Path=/`);
 
     res.status(200).json({ 
       success: true, 

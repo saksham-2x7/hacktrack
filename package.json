@@ -19,7 +19,6 @@
   "homepage": "https://github.com/saksham-2x7/hacktrack#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "cookie": "^2.0.1",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0"
   }
