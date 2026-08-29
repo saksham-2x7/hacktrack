@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "hacktrack",
   "builds": [
     {
       "src": "index.html",
