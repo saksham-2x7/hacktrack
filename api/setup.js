@@ -33,6 +33,20 @@ export default async function handler(req, res) {
       );
     `);
 
+    // Add team_size column if not exists
+    await pool.query(`
+      ALTER TABLE hackathons ADD COLUMN IF NOT EXISTS team_size INTEGER DEFAULT 1;
+    `);
+
+    // Create team_members table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS team_members (
+        hackathon_id INTEGER REFERENCES hackathons(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY (hackathon_id, user_id)
+      );
+    `);
+
     res.status(200).json({ success: true, message: 'Database tables initialized successfully!' });
   } catch (error) {
     console.error('Setup error:', error);

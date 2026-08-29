@@ -290,7 +290,7 @@
     </button>
     <div class="auth-container">
       <div class="auth-brand">
-        <span class="brand-mark">H</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-mark-svg" style="color: var(--text-accent); margin-right: 8px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         <span class="brand-name">HackTrack</span>
       </div>
 
@@ -345,7 +345,7 @@
   <div class="dashboard" id="dashboard">
     <header class="site-header site-container">
       <a href="#" class="brand" onclick="event.preventDefault()">
-        <span class="brand-mark">H</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-mark-svg" style="color: var(--text-accent); margin-right: 8px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         <span class="brand-name">HackTrack</span>
       </a>
       <div class="header-actions">
@@ -388,13 +388,7 @@
         <p class="section-description">Every event you're watching, registered for, or have completed.</p>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:28px;">
-        <div class="filter-bar" style="margin-bottom:0;">
-          <button class="filter-btn active" onclick="filterHackathons('all')" data-filter="all">All</button>
-          <button class="filter-btn" onclick="filterHackathons('upcoming')" data-filter="upcoming">Upcoming</button>
-          <button class="filter-btn" onclick="filterHackathons('active')" data-filter="active">Active</button>
-          <button class="filter-btn" onclick="filterHackathons('registered')" data-filter="registered">Registered</button>
-          <button class="filter-btn" onclick="filterHackathons('ended')" data-filter="ended">Ended</button>
-        </div>
+        
         <div class="view-toggle">
           <button class="view-toggle-btn active" id="btnViewList" onclick="toggleView('list')">List</button>
           <button class="view-toggle-btn" id="btnViewCalendar" onclick="toggleView('calendar')">Calendar</button>
@@ -494,9 +488,9 @@
     // ═══════════════════════════════════════════
     //  STATE
     // ═══════════════════════════════════════════
-    let currentUser = null; // { username, displayName }
+    let currentUser = null; // { userId, username, displayName }
     let hackathons = [];
-    let currentFilter = 'all';
+    let allUsers = [];
     let currentView = 'list';
     let calMonth = new Date().getMonth();
     let calYear = new Date().getFullYear();
@@ -511,13 +505,12 @@
       updateClocks();
       setInterval(updateClocks, 1000);
 
-      // Check server session
       try {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
           currentUser = data.user;
-          await loadUserData();
+          await Promise.all([loadUserData(), fetchAllUsers()]);
           showDashboard();
         } else {
           updateSlots();
@@ -535,6 +528,17 @@
         }
       } catch (e) {
         console.error('Failed to load hackathons');
+      }
+    }
+
+    async function fetchAllUsers() {
+      try {
+        const res = await fetch('/api/users');
+        if (res.ok) {
+          allUsers = await res.json();
+        }
+      } catch(e) {
+        console.error('Failed to load users');
       }
     }
 
@@ -588,9 +592,6 @@
       if (el) el.textContent = `[ Secure Mode Active ]`;
     }
 
-    // ═══════════════════════════════════════════
-    //  SIGNUP
-    // ═══════════════════════════════════════════
     async function handleSignup(e) {
       e.preventDefault();
       clearAuthMessages();
@@ -631,9 +632,6 @@
       document.getElementById('signupError').classList.add('visible');
     }
 
-    // ═══════════════════════════════════════════
-    //  LOGIN
-    // ═══════════════════════════════════════════
     async function handleLogin(e) {
       e.preventDefault();
       clearAuthMessages();
@@ -657,7 +655,7 @@
         }
 
         currentUser = data.user;
-        await loadUserData();
+        await Promise.all([loadUserData(), fetchAllUsers()]);
         showDashboard();
       } catch(e) {
         document.getElementById('loginErrorText').textContent = 'Network error';
@@ -719,32 +717,42 @@
     // ═══════════════════════════════════════════
     //  RENDER LIST
     // ═══════════════════════════════════════════
-    function renderHackathons() {
-      const list = document.getElementById('hackathonList');
-      let filtered = currentFilter === 'all' ? [...hackathons] : hackathons.filter(h => h.status === currentFilter);
-      const order = { active: 0, registered: 1, upcoming: 2, ended: 3 };
-      filtered.sort((a, b) => (order[a.status] - order[b.status]) || (new Date(a.startDate) - new Date(b.startDate)));
-      if (!filtered.length) {
-        list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚡</div><div class="empty-state-title">${currentFilter === 'all' ? 'No hackathons yet' : 'No ' + currentFilter + ' hackathons'}</div><div class="empty-state-text">${currentFilter === 'all' ? 'Click "Add hackathon" to start tracking your first event.' : 'Change the filter or add a new hackathon.'}</div></div>`;
-        return;
+    function generateItemHtml(h, i) {
+      const num = String(i + 1).padStart(2, '0');
+      let teamStr = '';
+      if(h.teamMembers && h.teamMembers.length > 0) {
+        const names = h.teamMembers.map(m => m.displayName).join(', ');
+        teamStr = `<span class="hackathon-meta-line" style="margin-top: 4px; font-size: 0.85em; opacity: 0.8;"><span class="meta-bracket">Team:</span> <span>${esc(names)}</span></span>`;
       }
-      list.innerHTML = filtered.map((h, i) => {
-        const num = String(i + 1).padStart(2, '0');
-        return `<li class="hackathon-item fade-in stagger-${Math.min(i + 1, 5)}" onclick="openDetailModal(${h.id})">
-          <span class="hackathon-chip">${num}</span>
-          <div class="hackathon-item-top">
-            <div>
-              <div class="hackathon-name"><span>${esc(h.name)}</span><span class="hackathon-arrow"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 11L11 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"/><path d="M11 3L4.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"/><path d="M11 3L11 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"/></svg></span></div>
-              <div class="hackathon-details"><span class="hackathon-category">${esc(h.category)}</span><span class="hackathon-desc">— ${esc(h.organizer || 'Unknown')}</span></div>
-            </div>
-            <div class="hackathon-item-meta">
-              <span class="hackathon-meta-line"><span class="meta-bracket">[</span><span>${fmtRange(h.startDate, h.endDate)}</span></span>
-              <span class="hackathon-meta-line"><span>${esc(h.prize || 'TBA')}</span><span class="meta-bracket">]</span></span>
-              <span class="status-badge ${h.status}">${h.status}</span>
-            </div>
+      return `<li class="hackathon-item fade-in stagger-${Math.min(i + 1, 5)}" onclick="openDetailModal(${h.id})">
+        <span class="hackathon-chip">${num}</span>
+        <div class="hackathon-item-top">
+          <div>
+            <div class="hackathon-name"><span>${esc(h.name)}</span><span class="hackathon-arrow"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 11L11 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"/><path d="M11 3L4.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"/><path d="M11 3L11 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square"/></svg></span></div>
+            <div class="hackathon-details"><span class="hackathon-category">${esc(h.category)}</span><span class="hackathon-desc">— ${esc(h.organizer || 'Unknown')}</span></div>
           </div>
-        </li>`;
-      }).join('');
+          <div class="hackathon-item-meta">
+            <span class="hackathon-meta-line"><span class="meta-bracket">[</span><span>${fmtRange(h.startDate, h.endDate)}</span></span>
+            <span class="hackathon-meta-line"><span>${esc(h.prize || 'TBA')}</span><span class="meta-bracket">]</span></span>
+            <span class="status-badge ${h.status}">${h.status}</span>
+            ${teamStr}
+          </div>
+        </div>
+      </li>`;
+    }
+
+    function renderHackathons() {
+      const activeList = hackathons.filter(h => h.status === 'active');
+      const upcomingList = hackathons.filter(h => h.status === 'upcoming' || h.status === 'registered');
+      const endedList = hackathons.filter(h => h.status === 'ended');
+
+      const sortFn = (a, b) => new Date(a.startDate) - new Date(b.startDate);
+      activeList.sort(sortFn); upcomingList.sort(sortFn); endedList.sort(sortFn);
+
+      const emptyHtml = `<div class="empty-state"><div class="empty-state-icon">⚡</div><div class="empty-state-title">No hackathons</div></div>`;
+      document.getElementById('listActive').innerHTML = activeList.length ? activeList.map(generateItemHtml).join('') : emptyHtml;
+      document.getElementById('listUpcoming').innerHTML = upcomingList.length ? upcomingList.map(generateItemHtml).join('') : emptyHtml;
+      document.getElementById('listEnded').innerHTML = endedList.length ? endedList.map(generateItemHtml).join('') : emptyHtml;
     }
 
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -787,7 +795,6 @@
         const isToday = calYear === tNow.getFullYear() && calMonth === tNow.getMonth() && d === tNow.getDate();
         
         let dayEvents = hackathons.filter(h => h.startDate <= dateStr && h.endDate >= dateStr);
-        if (currentFilter !== 'all') dayEvents = dayEvents.filter(h => h.status === currentFilter);
         
         let eventsHtml = '';
         if (dayEvents.length) {
@@ -812,21 +819,18 @@
     }
 
     // ═══════════════════════════════════════════
-    //  FILTERS
-    // ═══════════════════════════════════════════
-    function filterHackathons(status) {
-      currentFilter = status;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === status));
-      renderHackathons();
-      renderCalendar();
-    }
-
-    // ═══════════════════════════════════════════
     //  ADD / EDIT MODAL
     // ═══════════════════════════════════════════
     function openAddModal(editId) {
       document.getElementById('addModal').classList.add('open');
       document.body.style.overflow = 'hidden';
+      
+      const teamSelect = document.getElementById('hackTeamMembers');
+      teamSelect.innerHTML = allUsers
+        .filter(u => u.id !== currentUser.userId)
+        .map(u => `<option value="${u.id}">${esc(u.displayName)} (@${esc(u.username)})</option>`)
+        .join('');
+
       if (editId) {
         const h = hackathons.find(x => x.id === editId);
         if (!h) return;
@@ -844,6 +848,14 @@
         document.getElementById('hackPrize').value = h.prize || '';
         document.getElementById('hackUrl').value = h.url || '';
         document.getElementById('hackNotes').value = h.notes || '';
+        document.getElementById('hackTeamSize').value = h.teamSize || '';
+        
+        // Select members
+        const members = h.teamMembers ? h.teamMembers.map(m => m.id.toString()) : [];
+        Array.from(teamSelect.options).forEach(opt => {
+          opt.selected = members.includes(opt.value);
+        });
+
       } else {
         document.getElementById('modalEyebrowText').textContent = 'Add Hackathon';
         document.getElementById('modalTitle').textContent = 'Add a new hackathon';
@@ -858,6 +870,10 @@
     async function handleSaveHackathon(e) {
       e.preventDefault();
       const editId = document.getElementById('hackEditId').value;
+      
+      const select = document.getElementById('hackTeamMembers');
+      const selectedMembers = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+      
       const data = {
         name: document.getElementById('hackName').value,
         organizer: document.getElementById('hackOrganizer').value,
@@ -868,22 +884,32 @@
         prize: document.getElementById('hackPrize').value,
         url: document.getElementById('hackUrl').value,
         notes: document.getElementById('hackNotes').value,
+        teamSize: parseInt(document.getElementById('hackTeamSize').value) || 1,
+        teamMembers: selectedMembers
       };
 
       try {
+        let res;
         if (editId) {
-          await fetch(`/api/hackathon?id=${editId}`, {
+          res = await fetch(`/api/hackathon?id=${editId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           });
         } else {
-          await fetch('/api/hackathons', {
+          res = await fetch('/api/hackathons', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           });
         }
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Failed to save');
+          return;
+        }
+
         await loadUserData();
         renderHackathons();
         renderCalendar();
@@ -904,22 +930,40 @@
       document.body.style.overflow = 'hidden';
       document.getElementById('detailName').textContent = h.name;
       document.getElementById('detailCategory').textContent = h.category + (h.organizer ? ` · ${h.organizer}` : '');
+      
+      let teamStr = '';
+      if(h.teamMembers && h.teamMembers.length > 0) {
+        teamStr = `<div class="detail-field"><div class="detail-label">Team (${h.teamSize})</div><div class="detail-value">${esc(h.teamMembers.map(m=>m.displayName).join(', '))}</div></div>`;
+      }
+
       document.getElementById('detailGrid').innerHTML = `
         <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${h.status}">${h.status}</span></div></div>
         <div class="detail-field"><div class="detail-label">Dates</div><div class="detail-value">${fmtRange(h.startDate, h.endDate)}</div></div>
         <div class="detail-field"><div class="detail-label">Countdown</div><div class="detail-value">${countdown(h.startDate, h.endDate)}</div></div>
         <div class="detail-field"><div class="detail-label">Prize Pool</div><div class="detail-value">${esc(h.prize || '—')}</div></div>
+        ${teamStr}
         ${h.url ? `<div class="detail-field"><div class="detail-label">Website</div><div class="detail-value"><a href="${esc(h.url)}" target="_blank" rel="noopener" style="color:var(--text-accent);text-decoration:none">${esc(h.url)}</a></div></div>` : ''}
         ${h.notes ? `<div class="detail-field"><div class="detail-label">Notes</div><div class="detail-value">${esc(h.notes)}</div></div>` : ''}
       `;
-      document.getElementById('detailEditBtn').onclick = () => { closeDetailModal(); setTimeout(() => openAddModal(h.id), 200); };
-      document.getElementById('detailDeleteBtn').onclick = async () => {
-        if (confirm('Delete this hackathon?')) {
-          await fetch(`/api/hackathon?id=${h.id}`, { method: 'DELETE' });
-          await loadUserData();
-          renderHackathons(); renderCalendar(); updateStats(); closeDetailModal();
-        }
-      };
+      
+      // Only leader can edit/delete
+      const isLeader = h.leaderId === currentUser.userId;
+      const actions = isLeader 
+        ? `<button class="btn btn-secondary" id="detailEditBtn">Edit Details</button><button class="btn btn-primary" id="detailDeleteBtn">Delete</button>`
+        : `<p style="font-size: 0.8em; color: var(--text-muted);">Only the team leader can edit this event.</p>`;
+      
+      document.querySelector('.detail-actions').innerHTML = actions;
+
+      if (isLeader) {
+        document.getElementById('detailEditBtn').onclick = () => { closeDetailModal(); setTimeout(() => openAddModal(h.id), 200); };
+        document.getElementById('detailDeleteBtn').onclick = async () => {
+          if (confirm('Delete this hackathon?')) {
+            await fetch(`/api/hackathon?id=${h.id}`, { method: 'DELETE' });
+            await loadUserData();
+            renderHackathons(); renderCalendar(); updateStats(); closeDetailModal();
+          }
+        };
+      }
     }
     function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); document.body.style.overflow = ''; }
 
@@ -938,9 +982,6 @@
     document.getElementById('detailModal').addEventListener('click', e => { if (e.target === document.getElementById('detailModal')) closeDetailModal(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAddModal(); closeDetailModal(); } });
 
-    // ═══════════════════════════════════════════
-    //  BOOT
-    // ═══════════════════════════════════════════
     init();
   </script>
 </body>
