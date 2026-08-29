@@ -14,7 +14,7 @@ async function handler(req, res) {
              FROM team_members tm 
              JOIN users u ON u.id = tm.user_id 
              WHERE tm.hackathon_id = h.id
-            ), '[]'
+            ), '[]'::json
           ) as team_members
         FROM hackathons h
         WHERE h.user_id = $1 
@@ -35,7 +35,7 @@ async function handler(req, res) {
         url: r.url,
         notes: r.notes,
         teamSize: r.team_size || 1,
-        teamMembers: r.team_members
+        teamMembers: typeof r.team_members === 'string' ? JSON.parse(r.team_members) : (r.team_members || [])
       })));
     } catch (error) {
       console.error(error);

@@ -918,7 +918,8 @@
         updateStats();
         closeAddModal();
       } catch (err) {
-        console.error('Failed to save');
+        console.error('Failed to save:', err);
+        alert('Error: ' + err.message);
       }
     }
 
