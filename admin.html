@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HackTrack Admin Portal</title>
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>' type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #ffffff;
+      --text-muted: #888888;
+      --border: #333333;
+      --accent: #ff4444;
+      --font: 'SF Pro Display', -apple-system, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+    .header {
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 24px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin: 0;
+      color: var(--accent);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 24px;
+    }
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 12px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+    .input-group input { width: 100%; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 4px; font-family: var(--font); }
+    button { background: var(--text); color: var(--bg); border: none; padding: 12px 24px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; font-family: var(--font); }
+    button:hover { opacity: 0.9; }
+    #dashboard { display: none; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .stat-box { background: var(--bg); border: 1px solid var(--border); padding: 20px; border-radius: 6px; text-align: center; }
+    .stat-num { font-size: 32px; font-weight: bold; color: var(--accent); margin-bottom: 8px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+    th { font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>[ SYSTEM_ADMIN ]</h1>
+    </div>
+
+    <div id="loginView" class="card" style="max-width: 400px; margin: 0 auto;">
+      <form id="loginForm">
+        <div class="input-group">
+          <label>Admin ID</label>
+          <input type="text" id="adminId" required>
+        </div>
+        <div class="input-group">
+          <label>Passcode</label>
+          <input type="password" id="adminPass" required>
+        </div>
+        <button type="submit">AUTHENTICATE</button>
+      </form>
+    </div>
+
+    <div id="dashboard">
+      <div class="card">
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-num" id="statUsers">0</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="statHacks">0</div>
+            <div class="stat-label">Hackathons</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="statTeams">0</div>
+            <div class="stat-label">Team Memberships</div>
+          </div>
+        </div>
+        
+        <h3 style="margin-top: 40px; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Registered Accounts</h3>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Display Name</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = document.getElementById('adminId').value;
+      const p = document.getElementById('adminPass').value;
+      
+      const res = await fetch('/api/admin/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      
+      if (res.ok) {
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadData();
+      } else {
+        alert('ACCESS DENIED');
+      }
+    });
+
+    async function loadData() {
+      const res = await fetch('/api/admin/data');
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('statUsers').textContent = data.stats.totalUsers;
+        document.getElementById('statHacks').textContent = data.stats.totalHackathons;
+        document.getElementById('statTeams').textContent = data.stats.totalTeamMemberships;
+        
+        document.getElementById('userTableBody').innerHTML = data.users.map(u => `
+          <tr>
+            <td style="color: var(--text-muted);">#${u.id}</td>
+            <td>@${u.username}</td>
+            <td>${u.displayName}</td>
+            <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+          </tr>
+        `).join('');
+      } else {
+        alert('SESSION EXPIRED');
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>
