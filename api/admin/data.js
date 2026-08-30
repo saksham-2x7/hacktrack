@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getPool } = require('../db');
+const { getPool } = require('../../lib/db');
 
 export default async function handler(req, res) {
   const cookieHeader = req.headers.cookie || '';

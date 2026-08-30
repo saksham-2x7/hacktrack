@@ -1,4 +1,4 @@
-const { requireAuth } = require('./middleware');
+const { requireAuth } = require('../../lib/middleware');
 
 function handler(req, res) {
   // If requireAuth passes, req.user is set

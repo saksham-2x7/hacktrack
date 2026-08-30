@@ -1,4 +1,4 @@
-const { getPool } = require('../db');
+const { getPool } = require('../../lib/db');
 const bcrypt = require('bcrypt');
 
 export default async function handler(req, res) {

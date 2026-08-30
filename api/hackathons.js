@@ -1,5 +1,5 @@
-const { getPool } = require('./db');
-const { requireAuth } = require('./auth/middleware');
+const { getPool } = require('../lib/db');
+const { requireAuth } = require('../lib/middleware');
 
 async function handler(req, res) {
   const pool = getPool();
